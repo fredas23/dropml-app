@@ -787,14 +787,12 @@ textarea.form-control { resize: vertical; min-height: 80px; }
               </div>
               <div class="form-group">
                 <div class="form-label">3. CATEGORIA</div>
-                <select class="form-control" id="pub-category">
-                  <option>Decorações Festivas</option>
-                  <option>Eletrônicos</option>
-                  <option>Casa e Jardim</option>
-                  <option>Moda e Acessórios</option>
-                  <option>Brinquedos</option>
-                  <option>Esporte e Lazer</option>
-                </select>
+                <div style="font-size:12px;color:var(--text-secondary);line-height:1.5">A categoria é escolhida automaticamente pelo Mercado Livre a partir do título.</div>
+              </div>
+              <div class="form-group">
+                <div class="form-label">4. URL DA FOTO (obrigatório)</div>
+                <input type="text" class="form-control" id="pub-photo" placeholder="https://... (link público da imagem do produto)">
+                <div style="font-size:11px;color:var(--text-muted);margin-top:4px">O Mercado Livre precisa de pelo menos uma foto com link público (ex: imagem do AliExpress ou da sua loja).</div>
               </div>
             </div>
           </div>
@@ -1788,26 +1786,39 @@ function disconnectML() {
 
 // ─── REAL PUBLISH via API ────────────────────────────────────
 async function publishViaAPI() {
-  if (!mlToken || !mlUser) return false;
-  const title    = document.getElementById('pub-title').value;
-  const desc     = document.getElementById('pub-desc').value;
+  if (!mlToken || !mlUser) return { error: 'Conta do Mercado Livre não conectada.' };
+  const title    = document.getElementById('pub-title').value.trim().slice(0, 60);
+  const desc     = document.getElementById('pub-desc').value.trim();
   const price    = parseFloat(document.getElementById('pub-price').value);
-  const category = 'MLB3530'; // Outros — trocar pela categoria real
+  const photo    = document.getElementById('pub-photo').value.trim();
+
+  if (!title) return { error: 'Preencha o título do anúncio.' };
+  if (!price || price <= 0) return { error: 'Preencha o preço de venda.' };
+  if (!photo.startsWith('http')) return { error: 'Cole o link público de uma foto do produto (começa com https://).' };
+
+  // Descobre a categoria certa pelo título
+  const pred = await mlFetch('/sites/MLB/category_predictor/predict?title=' + encodeURIComponent(title));
+  const category = pred && pred.id ? pred.id : null;
+  if (!category) return { error: 'Não consegui descobrir a categoria pelo título. Tente um título mais específico.' };
 
   const body = {
-    title, description: desc, price,
+    title,
+    category_id: category,
+    price,
     currency_id: 'BRL',
     available_quantity: 99,
     buying_mode: 'buy_it_now',
     listing_type_id: document.getElementById('pub-type').value === 'Premium' ? 'gold_pro' : 'gold_special',
     condition: 'new',
-    category_id: category,
-    pictures: [],
-    shipping: { mode: 'me2', free_shipping: false }
+    pictures: [{ source: photo }],
+    description: { plain_text: desc || title },
+    shipping: { mode: 'me2', local_pick_up: false, free_shipping: false }
   };
 
   const result = await mlFetch('/items', { method: 'POST', body: JSON.stringify(body) });
-  return result && result.id ? result : false;
+  if (result && result.id) return result;
+  const msg = result && (result.message || (result.cause && result.cause[0] && result.cause[0].message)) || 'Erro desconhecido do Mercado Livre.';
+  return { error: msg };
 }
 
 // ─── OVERRIDE startPublish para usar API real se conectado ────
@@ -1826,9 +1837,11 @@ async function startPublish() {
       else {
         publishViaAPI().then(result => {
           modal.classList.remove('open');
-          if (result) {
-            document.getElementById('pub-url').textContent = result.permalink || ('https://www.mercadolivre.com.br/' + result.id);
+          if (result && result.error) {
+            alert('Não publicou: ' + result.error);
+            return;
           }
+          document.getElementById('pub-url').textContent = result.permalink || ('https://www.mercadolivre.com.br/' + result.id);
           showSuccessModal();
           recordPublished();
         });
