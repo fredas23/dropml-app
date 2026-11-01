@@ -1,0 +1,1912 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DropML — Publicador Automático</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ml-yellow: #FFE600;
+  --ml-blue: #3483FA;
+  --bg-dark: #0f1117;
+  --bg-card: #1a1d27;
+  --bg-card2: #21242f;
+  --border: #2a2d3a;
+  --text-primary: #f0f2f8;
+  --text-secondary: #8b8fa8;
+  --text-muted: #555870;
+  --green: #00c48c;
+  --red: #ff4d6d;
+  --orange: #ff9500;
+  --sidebar-w: 220px;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg-dark: #f0f2f8;
+    --bg-card: #ffffff;
+    --bg-card2: #f7f8fc;
+    --border: #e2e4ef;
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --text-muted: #9ca3af;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg-dark);
+  color: var(--text-primary);
+  min-height: 100vh;
+  display: flex;
+  overflow: hidden;
+}
+
+/* SIDEBAR */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: fixed;
+  left: 0; top: 0;
+  z-index: 100;
+}
+
+.logo {
+  padding: 20px 18px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.logo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+.logo-icon {
+  width: 30px; height: 30px;
+  background: var(--ml-yellow);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+.logo-text { color: var(--text-primary); }
+.logo-text span { color: var(--ml-yellow); }
+
+.sidebar-section {
+  padding: 10px 10px 0;
+}
+.sidebar-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 8px 8px 4px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: background 0.15s, color 0.15s;
+  margin-bottom: 2px;
+}
+.nav-item:hover { background: var(--bg-card2); color: var(--text-primary); }
+.nav-item.active { background: rgba(255,230,0,0.12); color: var(--ml-yellow); }
+.nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+.nav-badge {
+  margin-left: auto;
+  background: var(--ml-blue);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 20px;
+}
+
+.sidebar-stats {
+  margin-top: auto;
+  padding: 14px;
+  border-top: 1px solid var(--border);
+}
+.stat-mini {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.stat-mini strong { color: var(--green); font-weight: 700; }
+
+/* MAIN */
+.main {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.topbar {
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+.topbar-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+.topbar-sub {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  margin-left: 2px;
+}
+.topbar-actions { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.btn:hover { opacity: 0.88; }
+.btn:active { transform: scale(0.98); }
+.btn-primary { background: var(--ml-yellow); color: #111; }
+.btn-secondary { background: var(--bg-card2); color: var(--text-primary); border: 1px solid var(--border); }
+.btn-blue { background: var(--ml-blue); color: #fff; }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+.btn-danger { background: rgba(255,77,109,0.15); color: var(--red); border: 1px solid rgba(255,77,109,0.2); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+}
+
+/* VIEWS */
+.view { display: none; }
+.view.active { display: block; }
+
+/* CATALOG VIEW */
+.catalog-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.search-box {
+  flex: 1; min-width: 200px;
+  display: flex; align-items: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 0 12px;
+  gap: 8px;
+}
+.search-box input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 13.5px;
+  font-family: inherit;
+  padding: 9px 0;
+  flex: 1;
+}
+.search-box input::placeholder { color: var(--text-muted); }
+
+.filter-row {
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.chip {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  transition: all 0.15s;
+}
+.chip.active { background: rgba(255,230,0,0.15); border-color: var(--ml-yellow); color: var(--ml-yellow); }
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.product-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s;
+  position: relative;
+}
+.product-card:hover { border-color: var(--ml-yellow); transform: translateY(-2px); }
+.product-card.selected { border-color: var(--ml-yellow); box-shadow: 0 0 0 2px rgba(255,230,0,0.2); }
+
+.product-img {
+  width: 100%; aspect-ratio: 1;
+  object-fit: cover;
+  background: var(--bg-card2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 48px;
+  border-bottom: 1px solid var(--border);
+}
+.product-img img { width: 100%; height: 100%; object-fit: cover; }
+
+.product-info { padding: 10px 12px 12px; }
+.product-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.product-prices {
+  display: flex; flex-direction: column; gap: 2px;
+  margin-bottom: 8px;
+}
+.price-cost { font-size: 11px; color: var(--text-secondary); }
+.price-sale {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+.margin-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.margin-badge.good { background: rgba(0,196,140,0.15); color: var(--green); }
+.margin-badge.ok { background: rgba(255,149,0,0.15); color: var(--orange); }
+.margin-badge.bad { background: rgba(255,77,109,0.15); color: var(--red); }
+
+.card-checkbox {
+  position: absolute; top: 10px; right: 10px;
+  width: 20px; height: 20px;
+  border-radius: 6px;
+  border: 2px solid rgba(255,255,255,0.3);
+  background: rgba(0,0,0,0.4);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+  color: #fff;
+  backdrop-filter: blur(4px);
+}
+.product-card.selected .card-checkbox {
+  background: var(--ml-yellow);
+  border-color: var(--ml-yellow);
+  color: #111;
+}
+
+/* PUBLISH PANEL */
+.publish-layout {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 16px;
+  height: calc(100vh - 56px - 40px);
+}
+
+.publish-left {
+  display: flex; flex-direction: column; gap: 14px;
+  overflow-y: auto;
+}
+.publish-right {
+  display: flex; flex-direction: column; gap: 14px;
+  overflow-y: auto;
+}
+
+.panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.panel-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.panel-title {
+  font-size: 13px;
+  font-weight: 700;
+  display: flex; align-items: center; gap: 8px;
+}
+.panel-body { padding: 16px; }
+
+.form-group { margin-bottom: 14px; }
+.form-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  display: flex; align-items: center; gap: 6px;
+}
+.form-control {
+  width: 100%;
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13.5px;
+  font-family: inherit;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.form-control:focus { border-color: var(--ml-yellow); }
+textarea.form-control { resize: vertical; min-height: 80px; }
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+.marketplace-options {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.marketplace-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.marketplace-item.selected { border-color: var(--ml-blue); background: rgba(52,131,250,0.08); }
+.marketplace-logo {
+  width: 36px; height: 36px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+.marketplace-info { flex: 1; }
+.marketplace-name { font-size: 13px; font-weight: 600; }
+.marketplace-sub { font-size: 11px; color: var(--text-secondary); }
+.marketplace-check {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  transition: all 0.15s;
+}
+.marketplace-item.selected .marketplace-check { background: var(--ml-blue); border-color: var(--ml-blue); color: #fff; }
+
+/* PRICE CALCULATOR */
+.calc-display {
+  background: var(--bg-card2);
+  border-radius: 10px;
+  padding: 14px;
+  border: 1px solid var(--border);
+}
+.calc-row {
+  display: flex; justify-content: space-between;
+  font-size: 12.5px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+}
+.calc-row:last-child { border-bottom: none; }
+.calc-row.total {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--green);
+  margin-top: 4px;
+}
+.calc-row.cost { color: var(--red); }
+.calc-row .calc-label { color: var(--text-secondary); }
+
+/* PROGRESS */
+.progress-modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.progress-modal.open { display: flex; }
+.progress-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+  width: 380px;
+  text-align: center;
+}
+.progress-icon {
+  font-size: 40px; margin-bottom: 14px;
+  animation: spin 1.5s linear infinite;
+}
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.progress-title { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+.progress-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 18px; }
+.progress-steps { text-align: left; display: flex; flex-direction: column; gap: 8px; }
+.progress-step {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.progress-step.done { color: var(--green); }
+.progress-step.active { color: var(--text-primary); font-weight: 500; }
+.step-dot {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px;
+  flex-shrink: 0;
+}
+.progress-step.done .step-dot { background: var(--green); border-color: var(--green); color: #fff; }
+.progress-step.active .step-dot { border-color: var(--ml-yellow); animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(255,230,0,0.4); } 50% { box-shadow: 0 0 0 6px rgba(255,230,0,0); } }
+
+/* SUCCESS MODAL */
+.success-modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+}
+.success-modal.open { display: flex; }
+.success-box {
+  background: var(--bg-card);
+  border: 1px solid var(--green);
+  border-radius: 16px;
+  padding: 32px;
+  width: 400px;
+  text-align: center;
+}
+.success-icon { font-size: 52px; margin-bottom: 14px; }
+.success-title { font-size: 20px; font-weight: 800; margin-bottom: 6px; }
+.success-sub { font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.5; }
+.success-preview {
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 18px;
+  text-align: left;
+}
+.preview-url {
+  font-size: 12px;
+  color: var(--ml-blue);
+  word-break: break-all;
+  font-family: monospace;
+  margin-bottom: 6px;
+}
+.preview-stats {
+  display: flex; gap: 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.preview-stats strong { color: var(--text-primary); }
+
+/* DASHBOARD */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.metric-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+}
+.metric-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; font-weight: 500; }
+.metric-value { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+.metric-value.green { color: var(--green); }
+.metric-value.yellow { color: var(--ml-yellow); }
+.metric-delta {
+  font-size: 12px; margin-top: 4px;
+  color: var(--green);
+  font-weight: 500;
+}
+
+.published-list { display: flex; flex-direction: column; gap: 10px; }
+.published-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex; align-items: center; gap: 14px;
+}
+.pub-thumb {
+  width: 46px; height: 46px;
+  border-radius: 8px;
+  background: var(--bg-card2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.pub-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.pub-name { font-size: 13.5px; font-weight: 600; margin-bottom: 3px; }
+.pub-meta { font-size: 12px; color: var(--text-secondary); display: flex; gap: 10px; }
+.pub-actions { margin-left: auto; display: flex; gap: 8px; }
+.status-pill {
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.status-pill.active { background: rgba(0,196,140,0.15); color: var(--green); }
+.status-pill.paused { background: rgba(139,143,168,0.15); color: var(--text-secondary); }
+
+/* AI BADGE */
+.ai-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px;
+  color: var(--ml-yellow);
+  cursor: pointer;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: rgba(255,230,0,0.1);
+  border: 1px solid rgba(255,230,0,0.2);
+  transition: background 0.15s;
+}
+.ai-badge:hover { background: rgba(255,230,0,0.2); }
+
+/* LOADING STATE */
+.generating {
+  display: flex; align-items: center; gap: 6px;
+  color: var(--text-secondary); font-size: 12px;
+  padding: 4px 0;
+}
+.dot-pulse span {
+  display: inline-block;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--ml-yellow);
+  animation: dotpulse 1.2s infinite;
+  margin: 0 1px;
+}
+.dot-pulse span:nth-child(2) { animation-delay: 0.2s; }
+.dot-pulse span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotpulse { 0%,80%,100%{opacity:0.2;transform:scale(0.8)} 40%{opacity:1;transform:scale(1)} }
+
+/* IMPORT URL */
+.import-box {
+  background: var(--bg-card);
+  border: 2px dashed var(--border);
+  border-radius: 14px;
+  padding: 32px;
+  text-align: center;
+  margin-bottom: 16px;
+  transition: border-color 0.15s;
+}
+.import-box:hover { border-color: var(--ml-yellow); }
+.import-icon { font-size: 36px; margin-bottom: 10px; }
+.import-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+.import-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; }
+.import-input-row {
+  display: flex; gap: 8px;
+}
+.import-input-row input {
+  flex: 1;
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--text-primary);
+  font-size: 13.5px;
+  font-family: inherit;
+  outline: none;
+}
+.import-input-row input:focus { border-color: var(--ml-yellow); }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* EMPTY STATE */
+.empty-state {
+  text-align: center; padding: 48px 20px;
+  color: var(--text-secondary);
+}
+.empty-icon { font-size: 48px; margin-bottom: 14px; opacity: 0.5; }
+.empty-title { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
+.empty-sub { font-size: 13.5px; }
+
+/* SELECT ALL BAR */
+.select-bar {
+  display: none;
+  align-items: center; gap: 12px;
+  background: var(--ml-yellow);
+  color: #111;
+  padding: 10px 16px;
+  border-radius: 10px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.select-bar.visible { display: flex; }
+
+@media (max-width: 900px) {
+  .sidebar { display: none; }
+  .main { margin-left: 0; }
+  .metrics-grid { grid-template-columns: 1fr 1fr; }
+  .publish-layout { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="logo">
+    <div class="logo-badge">
+      <div class="logo-icon">📦</div>
+      <div class="logo-text">Drop<span>ML</span></div>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Menu</div>
+    <div class="nav-item active" onclick="showView('catalog')">
+      <span class="icon">🔍</span> Catálogo
+      <span class="nav-badge" id="catalog-count">8</span>
+    </div>
+    <div class="nav-item" onclick="showView('publish')">
+      <span class="icon">🚀</span> Publicar
+    </div>
+    <div class="nav-item" onclick="showView('dashboard')">
+      <span class="icon">📊</span> Dashboard
+    </div>
+    <div class="nav-item" onclick="showView('import')">
+      <span class="icon">🔗</span> Importar URL
+    </div>
+    <div class="nav-item" onclick="showView('config')" id="nav-config">
+      <span class="icon">⚙️</span> Configurações
+      <span class="nav-badge" id="config-badge" style="background:var(--red);display:none">!</span>
+    </div>
+  </div>
+
+  <div class="sidebar-stats">
+    <div class="stat-mini" id="ml-status-bar" onclick="showView('config')" style="cursor:pointer">
+      <span id="ml-status-dot" style="width:8px;height:8px;border-radius:50%;background:var(--red);display:inline-block;margin-right:4px"></span>
+      <span id="ml-status-text" style="font-size:11px">ML desconectado</span>
+    </div>
+    <div class="stat-mini">Publicados hoje <strong id="stat-today">0</strong></div>
+    <div class="stat-mini">Lucro potencial <strong id="stat-lucro">R$ 0</strong></div>
+  </div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" id="topbar-title">Catálogo de Produtos</div>
+      <div class="topbar-sub" id="topbar-sub">Selecione os produtos para publicar</div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-secondary btn-sm" onclick="showView('import')">+ Importar URL</button>
+      <button class="btn btn-primary" id="btn-publicar" onclick="goToPublish()" style="display:none">
+        🚀 Publicar Selecionados (<span id="sel-count">0</span>)
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- CATALOG VIEW -->
+    <div class="view active" id="view-catalog">
+      <div class="catalog-toolbar">
+        <div class="search-box">
+          <span>🔍</span>
+          <input type="text" placeholder="Buscar produto..." oninput="filterProducts(this.value)">
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="sortByMargin()">↓ Maior margem</button>
+      </div>
+
+      <div class="filter-row">
+        <div class="chip active" onclick="filterCat(this,'all')">Todos</div>
+        <div class="chip" onclick="filterCat(this,'natal')">🎄 Natal</div>
+        <div class="chip" onclick="filterCat(this,'eletro')">⚡ Eletrônicos</div>
+        <div class="chip" onclick="filterCat(this,'casa')">🏠 Casa</div>
+        <div class="chip" onclick="filterCat(this,'moda')">👗 Moda</div>
+      </div>
+
+      <div class="select-bar" id="select-bar">
+        <span id="select-bar-text">0 selecionados</span>
+        <button class="btn btn-sm" style="background:#111;color:#fff" onclick="selectAll()">Selecionar todos</button>
+        <button class="btn btn-sm" style="background:#111;color:#fff" onclick="clearSelection()">Limpar</button>
+        <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="goToPublish()">
+          🚀 Publicar no Mercado Livre
+        </button>
+      </div>
+
+      <div class="product-grid" id="product-grid">
+        <!-- injected by JS -->
+      </div>
+    </div>
+
+    <!-- PUBLISH VIEW -->
+    <div class="view" id="view-publish">
+      <div class="publish-layout">
+        <div class="publish-left">
+
+          <!-- Product Info -->
+          <div class="panel" id="publish-product-panel">
+            <div class="panel-header">
+              <div class="panel-title">📝 Anúncio</div>
+              <div class="ai-badge" onclick="generateWithAI()">✨ Gerar com IA</div>
+            </div>
+            <div class="panel-body">
+              <div class="form-group">
+                <div class="form-label">
+                  1. TÍTULO DO ANÚNCIO
+                  <span id="title-gen-status"></span>
+                </div>
+                <input type="text" class="form-control" id="pub-title" placeholder="Título do produto" value="">
+              </div>
+              <div class="form-group">
+                <div class="form-label">2. DESCRIÇÃO</div>
+                <textarea class="form-control" id="pub-desc" rows="4" placeholder="Descrição detalhada do produto..."></textarea>
+              </div>
+              <div class="form-group">
+                <div class="form-label">3. CATEGORIA</div>
+                <select class="form-control" id="pub-category">
+                  <option>Decorações Festivas</option>
+                  <option>Eletrônicos</option>
+                  <option>Casa e Jardim</option>
+                  <option>Moda e Acessórios</option>
+                  <option>Brinquedos</option>
+                  <option>Esporte e Lazer</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Specs -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">📐 Especificações</div>
+            </div>
+            <div class="panel-body">
+              <div class="form-row">
+                <div class="form-group">
+                  <div class="form-label">PREÇO DE VENDA (R$)</div>
+                  <input type="number" class="form-control" id="pub-price" value="24.85" oninput="updateCalc()">
+                </div>
+                <div class="form-group">
+                  <div class="form-label">LUCRO DESEJADO (%)</div>
+                  <input type="number" class="form-control" id="pub-margin" value="37" oninput="updateCalc()">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <div class="form-label">IMPOSTO (%)</div>
+                  <input type="number" class="form-control" id="pub-tax" value="4" oninput="updateCalc()">
+                </div>
+                <div class="form-group">
+                  <div class="form-label">TIPO DE ANÚNCIO</div>
+                  <select class="form-control" id="pub-type">
+                    <option>Clássico</option>
+                    <option>Premium</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <div class="form-label">FRETE</div>
+                <select class="form-control">
+                  <option>Comprador paga</option>
+                  <option>Frete grátis (você paga)</option>
+                  <option>Mercado Envios</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="publish-right">
+
+          <!-- Marketplace -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">🏪 Marketplace</div>
+            </div>
+            <div class="panel-body">
+              <div class="marketplace-options">
+                <div class="marketplace-item selected" onclick="toggleMarket(this)">
+                  <div class="marketplace-logo" style="background:#FFE600">🛍️</div>
+                  <div class="marketplace-info">
+                    <div class="marketplace-name">Mercado Livre</div>
+                    <div class="marketplace-sub">Conta conectada ✓</div>
+                  </div>
+                  <div class="marketplace-check">✓</div>
+                </div>
+                <div class="marketplace-item" onclick="toggleMarket(this)">
+                  <div class="marketplace-logo" style="background:#f05a28">🔶</div>
+                  <div class="marketplace-info">
+                    <div class="marketplace-name">Shopee</div>
+                    <div class="marketplace-sub">Pronto para publicar</div>
+                  </div>
+                  <div class="marketplace-check"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Calculator -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">🧮 Simulação de Lucro</div>
+            </div>
+            <div class="panel-body">
+              <div class="calc-display">
+                <div class="calc-row cost">
+                  <span class="calc-label">− Custo do produto</span>
+                  <span id="calc-cost">R$ 6,85</span>
+                </div>
+                <div class="calc-row cost">
+                  <span class="calc-label">− Comissão ML (13%)</span>
+                  <span id="calc-commission">R$ 3,23</span>
+                </div>
+                <div class="calc-row cost">
+                  <span class="calc-label">− Imposto</span>
+                  <span id="calc-tax">R$ 0,99</span>
+                </div>
+                <div class="calc-row">
+                  <span class="calc-label">Preço de venda</span>
+                  <span id="calc-sale">R$ 24,85</span>
+                </div>
+                <div class="calc-row total">
+                  <span>Lucro estimado</span>
+                  <span id="calc-profit">R$ 13,78</span>
+                </div>
+              </div>
+              <div style="margin-top:12px;font-size:12px;color:var(--text-secondary);line-height:1.5">
+                💡 Sugestão: 30% de lucro após taxas é saudável. Ajuste o preço de venda conforme sua estratégia.
+              </div>
+            </div>
+          </div>
+
+          <!-- Publish Button -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">✅ Publicar</div>
+            </div>
+            <div class="panel-body">
+              <div style="margin-bottom:14px;font-size:13px;color:var(--text-secondary);line-height:1.6">
+                Ao publicar, o anúncio será criado na sua conta do Mercado Livre com as configurações acima.
+              </div>
+              <button class="btn btn-blue" style="width:100%;justify-content:center;padding:12px" onclick="startPublish()">
+                🛒 Publicar em 1 loja
+              </button>
+              <button class="btn btn-secondary" style="width:100%;justify-content:center;padding:10px;margin-top:8px" onclick="showPreview()">
+                👁️ Pré-visualizar anúncio
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD VIEW -->
+    <div class="view" id="view-dashboard">
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">Produtos publicados</div>
+          <div class="metric-value yellow" id="m-published">3</div>
+          <div class="metric-delta">↑ +3 hoje</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Lucro potencial</div>
+          <div class="metric-value green" id="m-profit">R$ 0</div>
+          <div class="metric-delta">por venda combinada</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Anúncios ativos</div>
+          <div class="metric-value" id="m-active">3</div>
+          <div class="metric-delta" style="color:var(--text-secondary)">no Mercado Livre</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Margem média</div>
+          <div class="metric-value">34%</div>
+          <div class="metric-delta">dentro do ideal</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">📋 Produtos Publicados</div>
+          <button class="btn btn-primary btn-sm" onclick="showView('catalog')">+ Adicionar mais</button>
+        </div>
+        <div class="panel-body">
+          <div class="published-list" id="published-list">
+            <div class="empty-state">
+              <div class="empty-icon">📦</div>
+              <div class="empty-title">Nenhum produto publicado ainda</div>
+              <div class="empty-sub">Vá ao Catálogo, selecione produtos e publique no Mercado Livre</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIG VIEW -->
+    <div class="view" id="view-config">
+      <div style="max-width:600px;margin:0 auto;display:flex;flex-direction:column;gap:16px">
+
+        <!-- Status da conexão -->
+        <div class="panel" id="ml-conn-panel">
+          <div class="panel-header">
+            <div class="panel-title">🔌 Conexão Mercado Livre</div>
+            <span id="conn-status-badge" class="status-pill paused">Desconectado</span>
+          </div>
+          <div class="panel-body">
+            <div id="conn-disconnected">
+              <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;line-height:1.6">
+                Conecte sua conta do Mercado Livre para publicar anúncios reais e sincronizar sua loja.
+              </div>
+              <div class="form-group">
+                <div class="form-label">CLIENT ID (APP ID)</div>
+                <input type="text" class="form-control" id="cfg-client-id" value="2036944965444475" placeholder="Cole seu App ID aqui">
+              </div>
+              <div class="form-group">
+                <div class="form-label">CLIENT SECRET</div>
+                <div style="position:relative">
+                  <input type="password" class="form-control" id="cfg-client-secret" placeholder="Cole seu Client Secret aqui" style="padding-right:40px">
+                  <span onclick="toggleSecret()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:16px;color:var(--text-secondary)">👁️</span>
+                </div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Armazenado apenas no seu navegador. Nunca enviado a terceiros.</div>
+              </div>
+              <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;font-size:14px" onclick="startOAuth()">
+                🔑 Conectar com Mercado Livre
+              </button>
+
+              <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+                <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;text-align:center">
+                  ── Ou cole o código manualmente ──
+                </div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;line-height:1.5">
+                  Se a página do GitHub mostrou um código (ex: <code style="background:var(--bg-card2);padding:1px 5px;border-radius:4px">TG-abc123...</code>), cole aqui:
+                </div>
+                <div style="display:flex;gap:8px">
+                  <input type="text" class="form-control" id="cfg-manual-code" placeholder="TG-xxxxxxxxxxxxxxxx" style="font-family:monospace;font-size:12px">
+                  <button class="btn btn-blue" onclick="useManualCode()" style="flex-shrink:0;white-space:nowrap">Usar código</button>
+                </div>
+                <div style="font-size:11px;color:var(--orange);margin-top:6px">⚠️ O código expira em ~60 segundos — cole rápido após autorizar!</div>
+              </div>
+            </div>
+
+            <div id="conn-connected" style="display:none">
+              <div style="display:flex;align-items:center;gap:14px;padding:14px;background:rgba(0,196,140,0.08);border:1px solid rgba(0,196,140,0.2);border-radius:10px;margin-bottom:16px">
+                <div style="font-size:32px" id="conn-avatar">🧑</div>
+                <div>
+                  <div style="font-weight:700;font-size:15px" id="conn-nickname">—</div>
+                  <div style="font-size:12px;color:var(--green)">● Conta conectada</div>
+                  <div style="font-size:11px;color:var(--text-muted)" id="conn-email">—</div>
+                </div>
+                <button class="btn btn-danger btn-sm" style="margin-left:auto" onclick="disconnectML()">Desconectar</button>
+              </div>
+              <button class="btn btn-secondary" style="width:100%;justify-content:center" onclick="syncMyItems()">
+                🔄 Sincronizar minha loja agora
+              </button>
+              <div id="sync-status" style="font-size:12px;color:var(--text-secondary);margin-top:8px;text-align:center"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Instruções -->
+        <div class="panel">
+          <div class="panel-header"><div class="panel-title">📋 Como funciona o OAuth2</div></div>
+          <div class="panel-body" style="font-size:13px;color:var(--text-secondary);line-height:1.8">
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;gap:10px;align-items:flex-start">
+                <span style="background:var(--ml-yellow);color:#111;font-weight:700;font-size:11px;padding:2px 7px;border-radius:20px;flex-shrink:0">1</span>
+                <span>Você clica em "Conectar" — abre uma janela de login do Mercado Livre</span>
+              </div>
+              <div style="display:flex;gap:10px;align-items:flex-start">
+                <span style="background:var(--ml-yellow);color:#111;font-weight:700;font-size:11px;padding:2px 7px;border-radius:20px;flex-shrink:0">2</span>
+                <span>Você autoriza o app DropMLV na sua conta — o ML gera um <code style="background:var(--bg-card2);padding:1px 5px;border-radius:4px">code</code></span>
+              </div>
+              <div style="display:flex;gap:10px;align-items:flex-start">
+                <span style="background:var(--ml-yellow);color:#111;font-weight:700;font-size:11px;padding:2px 7px;border-radius:20px;flex-shrink:0">3</span>
+                <span>O app troca o <code style="background:var(--bg-card2);padding:1px 5px;border-radius:4px">code</code> por um <code style="background:var(--bg-card2);padding:1px 5px;border-radius:4px">access_token</code> e salva no navegador</span>
+              </div>
+              <div style="display:flex;gap:10px;align-items:flex-start">
+                <span style="background:var(--ml-yellow);color:#111;font-weight:700;font-size:11px;padding:2px 7px;border-radius:20px;flex-shrink:0">4</span>
+                <span>A partir daí todas as chamadas à API do ML usam esse token automaticamente</span>
+              </div>
+            </div>
+            <div style="margin-top:14px;padding:10px 12px;background:rgba(255,149,0,0.08);border:1px solid rgba(255,149,0,0.2);border-radius:8px;font-size:12px;color:var(--orange)">
+              ⚠️ O token expira em 6 horas. O app renova automaticamente usando o Refresh Token. Redirect URI: <code style="font-size:11px">fredas23.github.io/dropml-redirect</code>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- IMPORT VIEW -->
+    <div class="view" id="view-import">
+      <div class="import-box">
+        <div class="import-icon">🔗</div>
+        <div class="import-title">Importar produto por URL</div>
+        <div class="import-sub">Cole o link de qualquer produto (AliExpress, Shopee, Amazon, ML) e importamos automaticamente as fotos, título e descrição.</div>
+        <div class="import-input-row">
+          <input type="text" id="import-url" placeholder="https://pt.aliexpress.com/item/..." />
+          <button class="btn btn-primary" onclick="importProduct()">Importar</button>
+        </div>
+      </div>
+
+      <div id="import-result" style="display:none">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">✅ Produto importado</div>
+            <div class="ai-badge" onclick="generateWithAI()">✨ Otimizar com IA</div>
+          </div>
+          <div class="panel-body" id="import-result-body"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- PROGRESS MODAL -->
+<div class="progress-modal" id="progress-modal">
+  <div class="progress-box">
+    <div class="progress-icon">⚙️</div>
+    <div class="progress-title">Publicando seu produto</div>
+    <div class="progress-sub">Mercado Livre · <span id="pub-account">JT20261008181325446</span></div>
+    <div class="progress-steps" id="progress-steps">
+      <div class="progress-step" data-step="0"><div class="step-dot">○</div>Validando as informações</div>
+      <div class="progress-step" data-step="1"><div class="step-dot">○</div>Montando título e descrição</div>
+      <div class="progress-step" data-step="2"><div class="step-dot">○</div>Preparando as imagens</div>
+      <div class="progress-step" data-step="3"><div class="step-dot">○</div>Conferindo medidas, peso e categoria</div>
+      <div class="progress-step" data-step="4"><div class="step-dot">○</div>Enviando ao marketplace</div>
+      <div class="progress-step" data-step="5"><div class="step-dot">○</div>Criando o anúncio</div>
+      <div class="progress-step" data-step="6"><div class="step-dot">○</div>Registrando no seu painel</div>
+      <div class="progress-step" data-step="7"><div class="step-dot">○</div>Conferindo como o anúncio nasceu</div>
+    </div>
+    <div style="margin-top:18px;font-size:12px;color:var(--text-muted)">
+      Criar o anúncio pode levar alguns segundos — quem está demorando é o marketplace. Deixe esta janela aberta.
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS MODAL -->
+<div class="success-modal" id="success-modal">
+  <div class="success-box">
+    <div class="success-icon">🎉</div>
+    <div class="success-title">Anúncio publicado!</div>
+    <div class="success-sub">Seu produto já está ao vivo no Mercado Livre. Normalmente aparece nas buscas em até 30 minutos.</div>
+    <div class="success-preview">
+      <div class="preview-url" id="pub-url">https://www.mercadolivre.com.br/JT20261008181325446</div>
+      <div class="preview-stats">
+        <span>Tipo: <strong>Clássico</strong></span>
+        <span>Margem: <strong id="pub-margin-display">37%</strong></span>
+        <span>Lucro: <strong id="pub-profit-display">R$ 13,78</strong></span>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn btn-blue" onclick="closeSuccess()">Ver Dashboard</button>
+      <button class="btn btn-secondary" onclick="closeSuccessAndCatalog()">Publicar mais</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────
+const PRODUCTS = [
+  { id:1, name:'Guirlanda De Natal Feliz Natal Com Laço E Guizo 18cm', cost:8.30, price:13.30, margin:38, cat:'natal', emoji:'🎄', img:null },
+  { id:2, name:'Enfeite Pendente De Natal Cabeça De Papai Noel 13x9cm', cost:3.90, price:5.93, margin:34, cat:'natal', emoji:'🎅', img:null },
+  { id:3, name:'Enfeite De Pendente De Natal HOHO 25x18cm', cost:10.20, price:16.93, margin:40, cat:'natal', emoji:'🤶', img:null },
+  { id:4, name:'Bengalinhas de Natal Coloridas Kit 10un', cost:5.50, price:9.90, margin:33, cat:'natal', emoji:'🍬', img:null },
+  { id:5, name:'Árvore de Natal Decorativa Pinheiro 30cm', cost:12.00, price:19.90, margin:36, cat:'natal', emoji:'🎁', img:null },
+  { id:6, name:'Carregador Wireless 15W Rápido Qi Universal', cost:18.00, price:34.90, margin:41, cat:'eletro', emoji:'⚡', img:null },
+  { id:7, name:'Suporte Articulado para Celular Carro Ventilação', cost:6.50, price:12.90, margin:37, cat:'eletro', emoji:'📱', img:null },
+  { id:8, name:'Organizador de Gaveta Modular 6 Compartimentos', cost:9.00, price:18.90, margin:39, cat:'casa', emoji:'📦', img:null },
+];
+
+let selectedIds = new Set();
+let publishedProducts = [];
+let currentFilter = 'all';
+let searchTerm = '';
+let currentProduct = null;
+
+// ─── VIEWS ────────────────────────────────────────────────────
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+
+  const navMap = { catalog: 0, publish: 1, dashboard: 2, import: 3 };
+  const navItems = document.querySelectorAll('.nav-item');
+  if (navMap[name] !== undefined) navItems[navMap[name]].classList.add('active');
+
+  const titles = {
+    catalog: ['Catálogo de Produtos', 'Selecione os produtos para publicar'],
+    publish: ['Publicar Produto', 'Configure e publique no Mercado Livre'],
+    dashboard: ['Dashboard', 'Seus anúncios e resultados'],
+    import: ['Importar por URL', 'Traga produtos de qualquer loja']
+  };
+  document.getElementById('topbar-title').textContent = titles[name][0];
+  document.getElementById('topbar-sub').textContent = titles[name][1];
+
+  if (name === 'dashboard') updateDashboard();
+}
+
+// ─── CATALOG ─────────────────────────────────────────────────
+function renderCatalog() {
+  const grid = document.getElementById('product-grid');
+  const filtered = PRODUCTS.filter(p => {
+    const matchCat = currentFilter === 'all' || p.cat === currentFilter;
+    const matchSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchCat && matchSearch;
+  });
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <div class="empty-icon">🔍</div>
+      <div class="empty-title">Nenhum produto encontrado</div>
+      <div class="empty-sub">Tente outro filtro ou importe um produto por URL</div>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(p => {
+    const sel = selectedIds.has(p.id);
+    const marginClass = p.margin >= 38 ? 'good' : p.margin >= 33 ? 'ok' : 'bad';
+    return `
+    <div class="product-card ${sel ? 'selected' : ''}" onclick="toggleProduct(${p.id})" id="card-${p.id}">
+      <div class="product-img">${p.emoji}</div>
+      <div class="card-checkbox">${sel ? '✓' : ''}</div>
+      <div class="product-info">
+        <div class="product-name">${p.name}</div>
+        <div class="product-prices">
+          <span class="price-cost">Custo: R$ ${p.cost.toFixed(2).replace('.',',')}</span>
+          <span class="price-sale">R$ ${p.price.toFixed(2).replace('.',',')}</span>
+        </div>
+        <span class="margin-badge ${marginClass}">▲ ${p.margin}% margem</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleProduct(id) {
+  if (selectedIds.has(id)) selectedIds.delete(id);
+  else selectedIds.add(id);
+  updateSelectionUI();
+  renderCatalog();
+}
+
+function updateSelectionUI() {
+  const count = selectedIds.size;
+  const bar = document.getElementById('select-bar');
+  const btn = document.getElementById('btn-publicar');
+  const selCount = document.getElementById('sel-count');
+
+  if (count > 0) {
+    bar.classList.add('visible');
+    btn.style.display = 'flex';
+    document.getElementById('select-bar-text').textContent = `${count} selecionado${count > 1 ? 's' : ''}`;
+    selCount.textContent = count;
+  } else {
+    bar.classList.remove('visible');
+    btn.style.display = 'none';
+  }
+}
+
+function selectAll() {
+  PRODUCTS.forEach(p => selectedIds.add(p.id));
+  updateSelectionUI();
+  renderCatalog();
+}
+
+function clearSelection() {
+  selectedIds.clear();
+  updateSelectionUI();
+  renderCatalog();
+}
+
+function filterProducts(val) {
+  searchTerm = val;
+  renderCatalog();
+}
+
+function filterCat(el, cat) {
+  currentFilter = cat;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderCatalog();
+}
+
+function sortByMargin() {
+  PRODUCTS.sort((a, b) => b.margin - a.margin);
+  renderCatalog();
+}
+
+// ─── PUBLISH ─────────────────────────────────────────────────
+function goToPublish() {
+  const ids = [...selectedIds];
+  if (ids.length === 0) return;
+  currentProduct = PRODUCTS.find(p => p.id === ids[0]);
+  if (!currentProduct) return;
+
+  document.getElementById('pub-title').value = 'Promo — ' + currentProduct.name;
+  document.getElementById('pub-price').value = currentProduct.price;
+  document.getElementById('pub-margin').value = currentProduct.margin;
+  updateCalc();
+  showView('publish');
+}
+
+function updateCalc() {
+  const price = parseFloat(document.getElementById('pub-price').value) || 0;
+  const margin = parseFloat(document.getElementById('pub-margin').value) || 0;
+  const taxPct = parseFloat(document.getElementById('pub-tax')?.value) || 4;
+
+  const commission = price * 0.13;
+  const tax = price * (taxPct / 100);
+  const cost = currentProduct ? currentProduct.cost : price * 0.38;
+  const profit = price - cost - commission - tax;
+
+  const fmt = v => 'R$ ' + Math.abs(v).toFixed(2).replace('.', ',');
+  document.getElementById('calc-cost').textContent = fmt(cost);
+  document.getElementById('calc-commission').textContent = fmt(commission);
+  document.getElementById('calc-tax').textContent = fmt(tax);
+  document.getElementById('calc-sale').textContent = fmt(price);
+  document.getElementById('calc-profit').textContent = fmt(profit);
+  document.getElementById('calc-profit').style.color = profit > 0 ? 'var(--green)' : 'var(--red)';
+}
+
+function toggleMarket(el) {
+  el.classList.toggle('selected');
+  const check = el.querySelector('.marketplace-check');
+  check.textContent = el.classList.contains('selected') ? '✓' : '';
+}
+
+// ─── AI GENERATION ────────────────────────────────────────────
+async function generateWithAI() {
+  const productName = currentProduct ? currentProduct.name : document.getElementById('pub-title').value;
+  if (!productName) return;
+
+  const titleEl = document.getElementById('pub-title');
+  const descEl = document.getElementById('pub-desc');
+  const statusEl = document.getElementById('title-gen-status');
+
+  statusEl.innerHTML = `<div class="generating"><div class="dot-pulse"><span></span><span></span><span></span></div> Gerando com IA...</div>`;
+  titleEl.disabled = true;
+  descEl.disabled = true;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: `Você é um especialista em e-commerce e Mercado Livre. Gere um título otimizado para SEO e uma descrição de vendas para este produto:
+
+Produto: ${productName}
+
+Retorne SOMENTE um JSON válido (sem markdown) com:
+{
+  "titulo": "título otimizado para ML (máx 60 chars, destaque benefício principal)",
+  "descricao": "descrição de 3 parágrafos: 1) o que é o produto e benefício principal, 2) características técnicas, 3) por que comprar agora. Use linguagem de vendas direta."
+}
+
+Regras do título ML: palavras-chave no início, sem caracteres especiais, mensure em português BR.`
+        }]
+      })
+    });
+
+    const data = await response.json();
+    const text = data.content?.[0]?.text || '';
+    let parsed;
+    try {
+      const clean = text.replace(/```json|```/g, '').trim();
+      parsed = JSON.parse(clean);
+    } catch {
+      parsed = { titulo: 'Promo — ' + productName, descricao: text };
+    }
+
+    titleEl.value = parsed.titulo || titleEl.value;
+    descEl.value = parsed.descricao || '';
+    statusEl.innerHTML = `<span style="color:var(--green);font-size:11px">✓ Gerado com IA</span>`;
+  } catch (err) {
+    statusEl.innerHTML = `<span style="color:var(--red);font-size:11px">Erro na IA — verifique conexão</span>`;
+  } finally {
+    titleEl.disabled = false;
+    descEl.disabled = false;
+  }
+}
+
+// ─── IMPORT ─────────────────────────────────────────────────
+async function importProduct() {
+  const url = document.getElementById('import-url').value.trim();
+  if (!url) return;
+
+  const resultDiv = document.getElementById('import-result');
+  const body = document.getElementById('import-result-body');
+  body.innerHTML = `<div class="generating"><div class="dot-pulse"><span></span><span></span><span></span></div> Analisando URL com IA...</div>`;
+  resultDiv.style.display = 'block';
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: `Simule a importação de produto de uma URL de e-commerce. A URL fornecida é: ${url}
+
+Crie dados fictícios REALISTAS de um produto típico desta plataforma (AliExpress/Shopee/Amazon/ML). Retorne SOMENTE JSON válido:
+{
+  "nome": "nome do produto",
+  "custo": 15.90,
+  "precoSugerido": 34.90,
+  "margem": 38,
+  "categoria": "categoria",
+  "emoji": "emoji representativo",
+  "descricao": "descrição curta do produto"
+}`
+        }]
+      })
+    });
+
+    const data = await response.json();
+    const text = data.content?.[0]?.text || '';
+    let prod;
+    try {
+      const clean = text.replace(/```json|```/g, '').trim();
+      prod = JSON.parse(clean);
+    } catch {
+      prod = { nome: 'Produto importado', custo: 15.90, precoSugerido: 29.90, margem: 35, categoria: 'Outros', emoji: '📦', descricao: 'Produto importado via URL' };
+    }
+
+    const newId = PRODUCTS.length + 1;
+    PRODUCTS.push({ id: newId, name: prod.nome, cost: prod.custo, price: prod.precoSugerido, margin: prod.margem, cat: 'casa', emoji: prod.emoji });
+    document.getElementById('catalog-count').textContent = PRODUCTS.length;
+
+    body.innerHTML = `
+      <div style="display:flex;gap:14px;align-items:center;margin-bottom:14px">
+        <div style="font-size:42px">${prod.emoji}</div>
+        <div>
+          <div style="font-weight:700;font-size:14px;margin-bottom:4px">${prod.nome}</div>
+          <div style="font-size:12px;color:var(--text-secondary)">${prod.descricao}</div>
+        </div>
+      </div>
+      <div class="form-row-3" style="margin-bottom:14px">
+        <div style="background:var(--bg-card2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:11px;color:var(--text-secondary)">Custo</div>
+          <div style="font-weight:700">R$ ${prod.custo?.toFixed(2).replace('.',',')}</div>
+        </div>
+        <div style="background:var(--bg-card2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:11px;color:var(--text-secondary)">Preço sugerido</div>
+          <div style="font-weight:700;color:var(--green)">R$ ${prod.precoSugerido?.toFixed(2).replace('.',',')}</div>
+        </div>
+        <div style="background:var(--bg-card2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:11px;color:var(--text-secondary)">Margem</div>
+          <div style="font-weight:700;color:var(--ml-yellow)">${prod.margem}%</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="publishImported(${newId})">
+        🚀 Publicar este produto
+      </button>`;
+  } catch {
+    body.innerHTML = `<div style="color:var(--red);font-size:13px">Não foi possível importar. Verifique a URL e tente novamente.</div>`;
+  }
+}
+
+function publishImported(id) {
+  selectedIds.clear();
+  selectedIds.add(id);
+  goToPublish();
+}
+
+// ─── PROGRESS & PUBLISH ───────────────────────────────────────
+function startPublish() {
+  const modal = document.getElementById('progress-modal');
+  modal.classList.add('open');
+  const steps = document.querySelectorAll('.progress-step');
+  steps.forEach(s => { s.classList.remove('active', 'done'); });
+
+  let i = 0;
+  const delays = [400, 600, 700, 600, 800, 700, 500, 600];
+
+  function nextStep() {
+    if (i > 0) {
+      steps[i - 1].classList.remove('active');
+      steps[i - 1].classList.add('done');
+      steps[i - 1].querySelector('.step-dot').textContent = '✓';
+    }
+    if (i < steps.length) {
+      steps[i].classList.add('active');
+      i++;
+      setTimeout(nextStep, delays[i - 1] || 500);
+    } else {
+      setTimeout(() => {
+        modal.classList.remove('open');
+        showSuccessModal();
+        recordPublished();
+      }, 400);
+    }
+  }
+  nextStep();
+}
+
+function showSuccessModal() {
+  const price = parseFloat(document.getElementById('pub-price').value) || 24.85;
+  const margin = document.getElementById('pub-margin').value;
+  const commission = price * 0.13;
+  const tax = price * 0.04;
+  const cost = currentProduct ? currentProduct.cost : price * 0.38;
+  const profit = price - cost - commission - tax;
+
+  document.getElementById('pub-margin-display').textContent = margin + '%';
+  document.getElementById('pub-profit-display').textContent = 'R$ ' + profit.toFixed(2).replace('.', ',');
+  document.getElementById('pub-url').textContent = 'https://www.mercadolivre.com.br/anuncio/MLB' + Math.floor(Math.random() * 9000000 + 1000000);
+
+  document.getElementById('success-modal').classList.add('open');
+}
+
+function recordPublished() {
+  if (!currentProduct) return;
+  const price = parseFloat(document.getElementById('pub-price').value) || 0;
+  const margin = document.getElementById('pub-margin').value;
+
+  const commission = price * 0.13;
+  const tax = price * 0.04;
+  const profit = price - (currentProduct.cost || 0) - commission - tax;
+
+  publishedProducts.push({
+    ...currentProduct,
+    publishedAt: new Date(),
+    salePrice: price,
+    margin: margin,
+    profit: profit,
+    title: document.getElementById('pub-title').value
+  });
+}
+
+function closeSuccess() {
+  document.getElementById('success-modal').classList.remove('open');
+  showView('dashboard');
+}
+
+function closeSuccessAndCatalog() {
+  document.getElementById('success-modal').classList.remove('open');
+  clearSelection();
+  showView('catalog');
+}
+
+// ─── DASHBOARD ────────────────────────────────────────────────
+function updateDashboard() {
+  const count = publishedProducts.length;
+  const totalProfit = publishedProducts.reduce((s, p) => s + (p.profit || 0), 0);
+
+  document.getElementById('m-published').textContent = count;
+  document.getElementById('m-active').textContent = count;
+  document.getElementById('m-profit').textContent = 'R$ ' + totalProfit.toFixed(2).replace('.', ',');
+  document.getElementById('stat-today').textContent = count;
+  document.getElementById('stat-lucro').textContent = 'R$ ' + totalProfit.toFixed(2).replace('.', ',');
+
+  const list = document.getElementById('published-list');
+  if (count === 0) {
+    list.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📦</div>
+      <div class="empty-title">Nenhum produto publicado ainda</div>
+      <div class="empty-sub">Vá ao Catálogo, selecione produtos e publique no Mercado Livre</div>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = publishedProducts.map((p, idx) => `
+    <div class="published-item">
+      <div class="pub-thumb">${p.emoji}</div>
+      <div style="flex:1">
+        <div class="pub-name">${p.title || p.name}</div>
+        <div class="pub-meta">
+          <span>R$ ${(p.salePrice||0).toFixed(2).replace('.',',')}</span>
+          <span>Margem ${p.margin}%</span>
+          <span style="color:var(--green)">+R$ ${(p.profit||0).toFixed(2).replace('.',',')} lucro</span>
+        </div>
+      </div>
+      <span class="status-pill active">● Ativo</span>
+    </div>`).join('');
+}
+
+function showPreview() {
+  alert('Pré-visualização: abrirá simulação do anúncio como aparece no ML.\n\n(Conecte sua conta real do Mercado Livre via API para ver o anúncio de verdade)');
+}
+
+// ─── OAUTH & ML API ──────────────────────────────────────────
+const ML_CLIENT_ID = '2036944965444475';
+const REDIRECT_URI = 'https://fredas23.github.io/dropml-app/callback.html';
+const ML_AUTH_URL  = 'https://auth.mercadolivre.com.br/authorization';
+const ML_TOKEN_URL = 'https://api.mercadolibre.com/oauth/token';
+const ML_API       = 'https://api.mercadolibre.com';
+
+let mlToken = null;
+let mlUser  = null;
+
+function loadStoredAuth() {
+  try {
+    const stored = localStorage.getItem('dropml_auth');
+    if (stored) {
+      const data = JSON.parse(stored);
+      if (data.access_token && data.expires_at > Date.now()) {
+        mlToken = data;
+        return true;
+      }
+    }
+  } catch(e) {}
+  return false;
+}
+
+function saveAuth(data) {
+  data.expires_at = Date.now() + (data.expires_in || 21600) * 1000;
+  localStorage.setItem('dropml_auth', JSON.stringify(data));
+  mlToken = data;
+}
+
+function toggleSecret() {
+  const f = document.getElementById('cfg-client-secret');
+  f.type = f.type === 'password' ? 'text' : 'password';
+}
+
+function startOAuth() {
+  const clientId = document.getElementById('cfg-client-id').value.trim() || ML_CLIENT_ID;
+  const secret   = document.getElementById('cfg-client-secret').value.trim();
+  if (!secret) {
+    document.getElementById('cfg-client-secret').style.borderColor = 'var(--red)';
+    document.getElementById('cfg-client-secret').placeholder = '⚠️ Cole o Client Secret para continuar';
+    return;
+  }
+  localStorage.setItem('dropml_secret', secret);
+  localStorage.setItem('dropml_client_id', clientId);
+
+  const authUrl = `${ML_AUTH_URL}?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
+  const popup = window.open(authUrl, 'ML OAuth', 'width=520,height=680,scrollbars=yes');
+
+  // Listener para receber o code via postMessage da página de redirect
+  function onMessage(event) {
+    if (!event.origin.includes('fredas23.github.io')) return;
+    if (event.data?.type === 'ML_OAUTH_CODE' && event.data?.code) {
+      window.removeEventListener('message', onMessage);
+      if (popup && !popup.closed) popup.close();
+      exchangeCode(event.data.code, clientId, secret);
+    }
+  }
+  window.addEventListener('message', onMessage);
+
+  // Fallback: se popup fechar sem postMessage, checar se veio ml_code na URL
+  const pollClosed = setInterval(() => {
+    if (!popup || popup.closed) {
+      clearInterval(pollClosed);
+      window.removeEventListener('message', onMessage);
+      const p = new URLSearchParams(window.location.search);
+      const c = p.get('ml_code');
+      if (c) exchangeCode(c, clientId, secret);
+    }
+  }, 1000);
+}
+
+async function exchangeCode(code, clientId, secret) {
+  const syncEl = document.getElementById('sync-status');
+  const btnAuth = document.querySelector('#conn-disconnected .btn-primary');
+  if (btnAuth) { btnAuth.textContent = '⏳ Trocando código...'; btnAuth.disabled = true; }
+
+  try {
+    const resp = await fetch(ML_TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        client_id: clientId,
+        client_secret: secret,
+        code: code,
+        redirect_uri: REDIRECT_URI
+      })
+    });
+    const data = await resp.json();
+    if (data.access_token) {
+      saveAuth(data);
+      await fetchMLUser();
+      setConnectedUI(true);
+      await syncMyItems();
+    } else {
+      throw new Error(data.message || 'Token inválido');
+    }
+  } catch(err) {
+    alert('Erro ao autenticar: ' + err.message + '\n\nVerifique o Client Secret e tente novamente.');
+    const btnErr = document.querySelector('#conn-disconnected .btn-primary');
+    if (btnErr) { btnErr.textContent = '🔑 Conectar com Mercado Livre'; btnErr.disabled = false; }
+  }
+}
+
+function useManualCode() {
+  const code = document.getElementById('cfg-manual-code').value.trim();
+  if (!code) {
+    document.getElementById('cfg-manual-code').style.borderColor = 'var(--red)';
+    return;
+  }
+  const secret   = document.getElementById('cfg-client-secret').value.trim() || localStorage.getItem('dropml_secret') || '';
+  const clientId = document.getElementById('cfg-client-id').value.trim() || localStorage.getItem('dropml_client_id') || ML_CLIENT_ID;
+  if (!secret) {
+    alert('Cole o Client Secret antes de usar o código!');
+    return;
+  }
+  localStorage.setItem('dropml_secret', secret);
+  localStorage.setItem('dropml_client_id', clientId);
+  exchangeCode(code, clientId, secret);
+}
+
+async function refreshToken() {
+  const stored = JSON.parse(localStorage.getItem('dropml_auth') || '{}');
+  const secret = localStorage.getItem('dropml_secret') || '';
+  const clientId = localStorage.getItem('dropml_client_id') || ML_CLIENT_ID;
+  if (!stored.refresh_token || !secret) return false;
+  try {
+    const resp = await fetch(ML_TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'refresh_token',
+        client_id: clientId,
+        client_secret: secret,
+        refresh_token: stored.refresh_token
+      })
+    });
+    const data = await resp.json();
+    if (data.access_token) { saveAuth(data); return true; }
+  } catch(e) {}
+  return false;
+}
+
+async function mlFetch(path, options = {}) {
+  if (!mlToken) return null;
+  if (mlToken.expires_at < Date.now() + 60000) await refreshToken();
+  const resp = await fetch(ML_API + path, {
+    ...options,
+    headers: { 'Authorization': 'Bearer ' + mlToken.access_token, 'Content-Type': 'application/json', ...(options.headers||{}) }
+  });
+  return resp.json();
+}
+
+async function fetchMLUser() {
+  const data = await mlFetch('/users/me');
+  if (data && data.id) {
+    mlUser = data;
+    document.getElementById('conn-nickname').textContent = data.nickname || data.first_name || 'Usuário ML';
+    document.getElementById('conn-email').textContent = data.email || '';
+    document.getElementById('conn-avatar').textContent = '🧑';
+  }
+}
+
+function setConnectedUI(connected) {
+  document.getElementById('conn-disconnected').style.display = connected ? 'none' : 'block';
+  document.getElementById('conn-connected').style.display   = connected ? 'block' : 'none';
+  const badge = document.getElementById('conn-status-badge');
+  badge.textContent = connected ? 'Conectado ✓' : 'Desconectado';
+  badge.className = 'status-pill ' + (connected ? 'active' : 'paused');
+  const dot  = document.getElementById('ml-status-dot');
+  const text = document.getElementById('ml-status-text');
+  dot.style.background  = connected ? 'var(--green)' : 'var(--red)';
+  text.textContent = connected ? ('ML: ' + (mlUser?.nickname || 'Conectado')) : 'ML desconectado';
+  document.getElementById('config-badge').style.display = connected ? 'none' : 'inline';
+}
+
+async function syncMyItems() {
+  if (!mlToken || !mlUser) return;
+  const statusEl = document.getElementById('sync-status');
+  statusEl.textContent = '⏳ Sincronizando sua loja...';
+  try {
+    const data = await mlFetch(`/users/${mlUser.id}/items/search?status=active&limit=20`);
+    if (!data || !data.results) { statusEl.textContent = 'Nenhum anúncio encontrado.'; return; }
+    const ids = data.results;
+    statusEl.textContent = `Carregando ${ids.length} anúncios...`;
+
+    const fetched = await Promise.all(ids.slice(0,10).map(id => mlFetch(`/items/${id}`)));
+    fetched.forEach(item => {
+      if (!item || !item.id) return;
+      const exists = PRODUCTS.find(p => p.mlId === item.id);
+      if (!exists) {
+        PRODUCTS.push({
+          id: PRODUCTS.length + 1,
+          mlId: item.id,
+          name: item.title,
+          cost: (item.price * 0.6),
+          price: item.price,
+          margin: 40,
+          cat: 'casa',
+          emoji: '🛍️',
+          fromML: true
+        });
+      }
+    });
+
+    document.getElementById('catalog-count').textContent = PRODUCTS.length;
+    renderCatalog();
+    statusEl.innerHTML = `<span style="color:var(--green)">✓ ${ids.length} anúncios sincronizados</span>`;
+  } catch(e) {
+    statusEl.textContent = 'Erro ao sincronizar: ' + e.message;
+  }
+}
+
+function disconnectML() {
+  if (!confirm('Desconectar sua conta do Mercado Livre?')) return;
+  localStorage.removeItem('dropml_auth');
+  localStorage.removeItem('dropml_secret');
+  localStorage.removeItem('dropml_client_id');
+  mlToken = null; mlUser = null;
+  setConnectedUI(false);
+  PRODUCTS = PRODUCTS.filter(p => !p.fromML);
+  renderCatalog();
+}
+
+// ─── REAL PUBLISH via API ────────────────────────────────────
+async function publishViaAPI() {
+  if (!mlToken || !mlUser) return false;
+  const title    = document.getElementById('pub-title').value;
+  const desc     = document.getElementById('pub-desc').value;
+  const price    = parseFloat(document.getElementById('pub-price').value);
+  const category = 'MLB3530'; // Outros — trocar pela categoria real
+
+  const body = {
+    title, description: desc, price,
+    currency_id: 'BRL',
+    available_quantity: 99,
+    buying_mode: 'buy_it_now',
+    listing_type_id: document.getElementById('pub-type').value === 'Premium' ? 'gold_pro' : 'gold_special',
+    condition: 'new',
+    category_id: category,
+    pictures: [],
+    shipping: { mode: 'me2', free_shipping: false }
+  };
+
+  const result = await mlFetch('/items', { method: 'POST', body: JSON.stringify(body) });
+  return result && result.id ? result : false;
+}
+
+// ─── OVERRIDE startPublish para usar API real se conectado ────
+const _startPublishOriginal = startPublish;
+async function startPublish() {
+  if (mlToken) {
+    const modal = document.getElementById('progress-modal');
+    modal.classList.add('open');
+    const steps = document.querySelectorAll('.progress-step');
+    steps.forEach(s => { s.classList.remove('active','done'); });
+    let i = 0;
+    const delays = [400,600,700,600,800,700,500,600];
+    function nextStep() {
+      if (i > 0) { steps[i-1].classList.remove('active'); steps[i-1].classList.add('done'); steps[i-1].querySelector('.step-dot').textContent='✓'; }
+      if (i < steps.length) { steps[i].classList.add('active'); i++; setTimeout(nextStep, delays[i-1]||500); }
+      else {
+        publishViaAPI().then(result => {
+          modal.classList.remove('open');
+          if (result) {
+            document.getElementById('pub-url').textContent = result.permalink || ('https://www.mercadolivre.com.br/' + result.id);
+          }
+          showSuccessModal();
+          recordPublished();
+        });
+      }
+    }
+    nextStep();
+  } else {
+    _startPublishOriginal();
+  }
+}
+
+// ─── UPDATE showView para config ─────────────────────────────
+const _showViewOrig = showView;
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  const navMap = { catalog:0, publish:1, dashboard:2, import:3, config:4 };
+  const navItems = document.querySelectorAll('.nav-item');
+  if (navMap[name] !== undefined) navItems[navMap[name]].classList.add('active');
+  const titles = {
+    catalog: ['Catálogo de Produtos','Selecione os produtos para publicar'],
+    publish: ['Publicar Produto','Configure e publique no Mercado Livre'],
+    dashboard: ['Dashboard','Seus anúncios e resultados'],
+    import: ['Importar por URL','Traga produtos de qualquer loja'],
+    config: ['Configurações','Conecte sua conta do Mercado Livre']
+  };
+  if (titles[name]) {
+    document.getElementById('topbar-title').textContent = titles[name][0];
+    document.getElementById('topbar-sub').textContent   = titles[name][1];
+  }
+  if (name === 'dashboard') updateDashboard();
+}
+
+// ─── INIT ─────────────────────────────────────────────────────
+document.getElementById('catalog-count').textContent = PRODUCTS.length;
+renderCatalog();
+updateCalc();
+
+// Verificar auth salva
+(async () => {
+  if (loadStoredAuth()) {
+    try {
+      await fetchMLUser();
+      setConnectedUI(true);
+      document.getElementById('config-badge').style.display = 'none';
+    } catch(e) { setConnectedUI(false); }
+  } else {
+    setConnectedUI(false);
+    document.getElementById('config-badge').style.display = 'inline';
+  }
+
+  // Capturar code pendente salvo pelo callback.html
+  const pendingCode = localStorage.getItem('dropml_pending_code');
+  const pendingTs   = parseInt(localStorage.getItem('dropml_pending_ts') || '0');
+  if (pendingCode && (Date.now() - pendingTs) < 55000) {
+    localStorage.removeItem('dropml_pending_code');
+    localStorage.removeItem('dropml_pending_ts');
+    const cId  = localStorage.getItem('dropml_client_id') || ML_CLIENT_ID;
+    const cSec = localStorage.getItem('dropml_secret') || '';
+    if (cSec) {
+      showView('config');
+      setTimeout(() => exchangeCode(pendingCode, cId, cSec), 400);
+    }
+  }
+
+  // Capturar code OAuth na URL (redirect do ML)
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  if (code) {
+    const clientId = localStorage.getItem('dropml_client_id') || ML_CLIENT_ID;
+    const secret   = localStorage.getItem('dropml_secret') || '';
+    if (secret) {
+      showView('config');
+      exchangeCode(code, clientId, secret);
+    }
+  }
+})();
+</script>
+</body>
+</html>
